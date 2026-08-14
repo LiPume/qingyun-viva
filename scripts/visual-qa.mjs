@@ -23,11 +23,11 @@ async function capture({ name, route, width, height, action }) {
   await context.close();
 }
 
-await capture({ name: "dashboard-desktop", route: "#/", width: 1440, height: 1000 });
-await capture({ name: "questions-desktop", route: "#/questions?school=fudan&source=screenshot-verified", width: 1440, height: 1000 });
+await capture({ name: "dashboard", route: "#/", width: 1440, height: 1000 });
+await capture({ name: "questions", route: "#/questions?school=fudan&source=screenshot-verified", width: 1440, height: 1000 });
 await capture({ name: "question-mobile-closed", route: "#/question/GEN-DS-S-001-4cbf7a", width: 390, height: 844 });
 await capture({
-  name: "question-mobile-revealed",
+  name: "question-detail",
   route: "#/question/SCH-NWPU-010-99d815",
   width: 390,
   height: 844,
@@ -36,8 +36,8 @@ await capture({
     await page.getByRole("button", { name: "我答完了" }).click();
   },
 });
-await capture({ name: "schools-tablet", route: "#/schools", width: 768, height: 1024 });
-await capture({ name: "mock-desktop", route: "#/mock", width: 1440, height: 1000 });
+await capture({ name: "schools", route: "#/schools", width: 768, height: 1024 });
+await capture({ name: "mock-interview", route: "#/mock", width: 1440, height: 1000 });
 
 await browser.close();
 process.stdout.write(`${JSON.stringify({ baseURL, outputDir, errors, results }, null, 2)}\n`);

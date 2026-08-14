@@ -9,9 +9,8 @@ test.beforeEach(async ({ page }) => {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
+  await page.addInitScript(() => localStorage.clear());
   await page.goto("./");
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
   await expect(page.getByRole("heading", { name: "今日不求看完，只求说清。" })).toBeVisible();
 });
 
