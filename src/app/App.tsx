@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { DashboardPage } from "../pages/DashboardPage";
 import { MockPage } from "../pages/MockPage";
@@ -31,13 +30,18 @@ function PageTitle() {
   return null;
 }
 
+function QuestionRoute() {
+  const { questionId } = useParams();
+  return <QuestionPage key={questionId} />;
+}
+
 export function App() {
   return (
     <><PageTitle /><Routes>
       <Route element={<AppShell />}>
         <Route index element={<DashboardPage />} />
         <Route path="questions" element={<QuestionsPage />} />
-        <Route path="question/:questionId" element={<QuestionPage />} />
+        <Route path="question/:questionId" element={<QuestionRoute />} />
         <Route path="schools" element={<SchoolsPage />} />
         <Route path="schools/:schoolId" element={<SchoolDetailPage />} />
         <Route path="mock" element={<MockPage />} />

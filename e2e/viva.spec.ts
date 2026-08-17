@@ -48,6 +48,23 @@ test("Dashboard 完成红题自评并更新复习时间", async ({ page }) => {
   expect(deltaDays).toBeLessThan(1.05);
 });
 
+test("继续下一题会回到闭卷初始态并重新显示四项自评", async ({ page }) => {
+  await page.goto("./#/question/GEN-DS-S-001-4cbf7a?mode=daily");
+  await page.getByRole("button", { name: "开始作答" }).click();
+  await page.getByRole("button", { name: "我答完了" }).click();
+  await page.getByRole("button", { name: /不会/ }).click();
+  await page.getByRole("button", { name: /继续下一题/ }).click();
+
+  await expect(page).toHaveURL(/question\/GEN-DS-S-002-d2f07c\?mode=daily/);
+  await expect(page.getByRole("heading", { name: /判断链表是否有环/ })).toBeVisible();
+  await expect(page.locator(".spoken-answer")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "开始作答" })).toBeVisible();
+
+  await page.getByRole("button", { name: "开始作答" }).click();
+  await page.getByRole("button", { name: "我答完了" }).click();
+  await expect(page.locator(".self-rating .rating")).toHaveCount(4);
+});
+
 test("追问一次只揭示一条并可标记卡住", async ({ page }) => {
   await page.goto("./#/question/SCH-NWPU-010-99d815");
   await page.getByRole("button", { name: "开始作答" }).click();
