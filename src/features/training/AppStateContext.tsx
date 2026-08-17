@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import type { MasteryLevel } from "../../models/dataset";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { MasteryLevel, ReviewPolicy } from "../../models/dataset";
 import type {
   BackupPayload,
   PersistedState,
@@ -9,6 +9,8 @@ import type {
   UserSettings,
 } from "../../models/training";
 import { getNextReviewAt } from "../../lib/training";
+import { useDataset } from "../dataset/DatasetContext";
+import { DEFAULT_REVIEW_POLICY } from "../dataset/validate";
 
 const PROGRESS_KEY = "qingyun-viva:progress:v1";
 const HISTORY_KEY = "qingyun-viva:history:v1";
@@ -47,6 +49,7 @@ interface AppStateContextValue extends PersistedState {
   updateSettings: (patch: Partial<UserSettings>) => void;
   exportBackup: () => BackupPayload;
   importBackup: (value: unknown) => void;
+  recalculateReviewSchedule: (policy: ReviewPolicy) => void;
   clearTrainingHistory: () => void;
 }
 
@@ -66,6 +69,8 @@ function validateBackup(value: unknown): BackupPayload {
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(initialState);
+  const { dataset } = useDataset();
+  const reviewPolicy = dataset?.reviewPolicy ?? DEFAULT_REVIEW_POLICY;
 
   const update = (updater: (current: PersistedState) => PersistedState) => {
     setState((current) => {
@@ -74,6 +79,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return next;
     });
   };
+
+  useEffect(() => {
+    const currentSchoolId = state.settings.currentSchoolId;
+    if (dataset && currentSchoolId && !dataset.schools.some((school) => school.id === currentSchoolId)) {
+      const timeout = window.setTimeout(() => {
+        setState((current) => {
+          if (current.settings.currentSchoolId !== currentSchoolId) return current;
+          const next = { ...current, settings: { ...current.settings, currentSchoolId: null } };
+          persist(next);
+          return next;
+        });
+      }, 0);
+      return () => window.clearTimeout(timeout);
+    }
+  }, [dataset, state.settings.currentSchoolId]);
 
   const value = useMemo<AppStateContextValue>(() => ({
     ...state,
@@ -87,7 +107,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         favorite: previous?.favorite ?? false,
         totalPractices: (previous?.totalPractices ?? 0) + 1,
         lastPracticedAt: timestamp,
-        nextReviewAt: getNextReviewAt(submission.mastery, greenStreak, practicedAt),
+        nextReviewAt: getNextReviewAt(submission.mastery, greenStreak, practicedAt, reviewPolicy),
         greenStreak,
         lastFollowUpResult: submission.followUpsAttempted === 0
           ? "not-attempted"
@@ -156,8 +176,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       persist(next);
       setState(next);
     },
+    recalculateReviewSchedule: (policy) => update((current) => ({
+      ...current,
+      progress: Object.fromEntries(Object.entries(current.progress).map(([questionId, item]) => {
+        if (!item.lastPracticedAt || item.mastery === 0) {
+          const rest = { ...item };
+          delete rest.nextReviewAt;
+          return [questionId, rest];
+        }
+        return [questionId, {
+          ...item,
+          nextReviewAt: getNextReviewAt(item.mastery, item.greenStreak, new Date(item.lastPracticedAt), policy),
+        }];
+      })),
+    })),
     clearTrainingHistory: () => update((current) => ({ ...current, progress: {}, history: [] })),
-  }), [state]);
+  }), [reviewPolicy, state]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

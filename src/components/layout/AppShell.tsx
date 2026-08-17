@@ -21,7 +21,7 @@ const navItems: NavItem[] = [
 ];
 
 export function AppShell() {
-  const { dataset, loading, error, reload } = useDataset();
+  const { dataset, loading, error, warning, reload } = useDataset();
   const { settings } = useAppState();
   const location = useLocation();
   const focused = location.pathname.startsWith("/mock/session");
@@ -64,7 +64,7 @@ export function AppShell() {
         <NavLink to="/" className="brand"><span className="brand-mark" aria-hidden="true">问</span><strong>青云问道</strong></NavLink>
         <NavLink to="/settings" className="icon-button" aria-label="打开设置"><Settings size={20} /></NavLink>
       </header>
-      <main id="main-content" className="main-content"><Outlet /></main>
+      <main id="main-content" className="main-content">{warning && <div className="dataset-warning" role="status">{warning}</div>}<Outlet /></main>
       <nav className="mobile-nav" aria-label="移动端主导航">
         {navItems.filter((item) => item.mobile).map(({ to, shortLabel, icon: Icon }) => (
           <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => isActive ? "active" : ""}>

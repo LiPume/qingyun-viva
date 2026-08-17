@@ -73,7 +73,7 @@ export function QuestionsPage() {
   return (
     <div className="page questions-page">
       <header className="page-header">
-        <div><p className="eyebrow">246 oral prompts</p><h1>专业课题库</h1><p>不是翻阅手册，而是一张张开口的题签。</p></div>
+        <div><p className="eyebrow">{dataset.questions.length} oral prompts</p><h1>专业课题库</h1><p>不是翻阅手册，而是一张张开口的题签。</p></div>
         <div className="result-count"><strong>{results.length}</strong><span>/ {dataset.questions.length} 题</span></div>
       </header>
 

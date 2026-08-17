@@ -9,7 +9,12 @@ test.beforeEach(async ({ page }) => {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  await page.addInitScript(() => localStorage.clear());
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("qingyun-viva:e2e-ready")) {
+      localStorage.clear();
+      sessionStorage.setItem("qingyun-viva:e2e-ready", "1");
+    }
+  });
   await page.goto("./");
   await expect(page.getByRole("heading", { name: "今日不求看完，只求说清。" })).toBeVisible();
 });
@@ -88,20 +93,90 @@ test("模拟面试 5 题完整走通并统一写入历史", async ({ page }) => 
   expect(history.every((record) => record.mode === "mock")).toBe(true);
 });
 
-test("完整备份可导出并从 JSON 恢复", async ({ page }) => {
+test("学习档案可独立导出并从 JSON 恢复", async ({ page }) => {
   await page.goto("./#/settings");
   await page.getByLabel("每日目标题数").fill("12");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出完整备份" }).click();
+  await page.getByRole("button", { name: "导出学习档案" }).click();
   const download = await downloadPromise;
   const path = await download.path();
   expect(path).not.toBeNull();
   const backup = JSON.parse(await readFile(path!, "utf8")) as { app: string; schemaVersion: number; settings: { dailyGoal: number } };
   expect(backup).toMatchObject({ app: "qingyun-viva", schemaVersion: 1, settings: { dailyGoal: 12 } });
   const restored = { ...backup, settings: { ...backup.settings, dailyGoal: 7 } };
-  await page.getByLabel("选择青云问道备份 JSON").setInputFiles({ name: "restore.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(restored)) });
+  await page.getByLabel("选择青云问道学习档案 JSON").setInputFiles({ name: "restore.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(restored)) });
   await expect(page.getByText(/restore.json/)).toBeVisible();
   await expect(page.getByLabel("每日目标题数")).toHaveValue("7");
+});
+
+test("完整题库可下载、加入院校和周期后导入，刷新持久且可无损恢复默认", async ({ page }) => {
+  await page.goto("./#/settings");
+  const defaultDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载内置模板" }).click();
+  const defaultDownload = await defaultDownloadPromise;
+  const defaultPath = await defaultDownload.path();
+  expect(defaultPath).not.toBeNull();
+  const custom = JSON.parse(await readFile(defaultPath!, "utf8")) as {
+    reviewPolicy: { redDays: number; yellowDays: number; greenDays: number; greenStreak2Days: number; description: string };
+    schools: Array<Record<string, unknown>>;
+    questions: Array<Record<string, unknown>>;
+  };
+  expect(custom.questions).toHaveLength(246);
+  expect(custom.schools).toHaveLength(12);
+  custom.reviewPolicy = { redDays: 2, yellowDays: 4, greenDays: 8, greenStreak2Days: 16, description: "E2E custom policy" };
+  custom.schools.push({ id: "my-university", name: "我的目标大学", college: "计算机学院", direction: "人工智能" });
+  custom.questions.push({
+    id: "CUSTOM-E2E-001",
+    subjectId: "data-structures",
+    question: "这是一道可导入的自定义题吗？",
+    answer: { spoken: "可以，导入后它会成为当前题库的一部分。" },
+    schools: ["my-university"],
+    source: { type: "user-authored", label: "用户自建" },
+  });
+  await page.getByLabel("选择青云问道题库 JSON").setInputFiles({ name: "my-viva.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(custom)) });
+  const preview = page.getByRole("region", { name: "待启用题库" });
+  await expect(preview).toContainText("my-viva.json");
+  await expect(preview).toContainText("247");
+  await expect(preview).toContainText("13");
+  await expect(preview).toContainText("红 2 天 · 黄 4 天 · 绿 8 天");
+  await page.getByRole("button", { name: "确认启用" }).click();
+  await expect(page.getByText(/已启用 my-viva.json/)).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("my-viva.json", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("当前题库概况")).toContainText("247");
+  await page.goto("./#/schools");
+  await expect(page.getByRole("link", { name: "我的目标大学", exact: true })).toBeVisible();
+  await page.goto("./#/question/CUSTOM-E2E-001");
+  await page.getByRole("button", { name: "开始作答" }).click();
+  await page.getByRole("button", { name: "我答完了" }).click();
+  await page.getByRole("button", { name: /不会/ }).click();
+  const customProgress = await page.evaluate(() => JSON.parse(localStorage.getItem("qingyun-viva:progress:v1") ?? "{}") as Record<string, { nextReviewAt: string }>);
+  const customDeltaDays = (new Date(customProgress["CUSTOM-E2E-001"].nextReviewAt).getTime() - Date.now()) / 86_400_000;
+  expect(customDeltaDays).toBeGreaterThan(1.95);
+  expect(customDeltaDays).toBeLessThan(2.05);
+
+  await page.goto("./#/settings");
+  const currentDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出当前题库" }).click();
+  const currentPath = await (await currentDownloadPromise).path();
+  const exported = JSON.parse(await readFile(currentPath!, "utf8")) as { questions: unknown[]; schools: unknown[] };
+  expect(exported.questions).toHaveLength(247);
+  expect(exported.schools).toHaveLength(13);
+  await page.getByRole("button", { name: "恢复内置题库" }).click();
+  await expect(page.getByLabel("当前题库概况")).toContainText("246");
+  await expect(page.getByText(/另有 1 道题的历史状态被保留/)).toBeVisible();
+  const retained = await page.evaluate(() => JSON.parse(localStorage.getItem("qingyun-viva:progress:v1") ?? "{}") as Record<string, unknown>);
+  expect(retained["CUSTOM-E2E-001"]).toBeDefined();
+});
+
+test("无效自定义题库不会覆盖当前有效题库", async ({ page }) => {
+  await page.goto("./#/settings");
+  const invalid = { schemaVersion: 1, subjects: [{ id: "one", name: "测试" }], schools: [], questions: [{ id: "bad", subjectId: "missing", question: "错误引用", answer: { spoken: "无效" } }] };
+  await page.getByLabel("选择青云问道题库 JSON").setInputFiles({ name: "invalid.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(invalid)) });
+  await expect(page.getByText(/题库未导入.*不存在的科目/)).toBeVisible();
+  await expect(page.getByLabel("当前题库概况")).toContainText("246");
+  expect(await page.evaluate(() => localStorage.getItem("qingyun-viva:dataset:v1"))).toBeNull();
 });
 
 test("手机/平板/桌面无横向溢出，hash 路由可刷新", async ({ page }) => {

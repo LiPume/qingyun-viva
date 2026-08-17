@@ -11,7 +11,7 @@ export function SchoolsPage() {
   return (
     <div className="page schools-page">
       <header className="page-header cloud-divider">
-        <div><p className="eyebrow">12 target schools</p><h1>院校研习案</h1><p>真题、官方范围、同校面经与预测始终分层展示。</p></div>
+        <div><p className="eyebrow">{dataset.schools.length} target schools</p><h1>院校研习案</h1><p>真题、官方范围、同校面经与预测始终分层展示。</p></div>
         <aside className="evidence-legend" aria-label="证据分层说明"><span><i className="verified" />截图真题</span><span><i className="official" />官方范围</span><span><i className="experience" />同校面经</span><span><i className="predicted" />高概率预测</span></aside>
       </header>
       <div className="school-grid">

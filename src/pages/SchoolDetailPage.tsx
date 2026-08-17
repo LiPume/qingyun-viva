@@ -4,6 +4,11 @@ import { QuestionRow } from "../components/QuestionRow";
 import { useDataset } from "../features/dataset/DatasetContext";
 import { useAppState } from "../features/training/AppStateContext";
 
+function formatDatasetDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "未标注日期" : new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(date);
+}
+
 export function SchoolDetailPage() {
   const { schoolId } = useParams();
   const { dataset } = useDataset();
@@ -19,7 +24,7 @@ export function SchoolDetailPage() {
     <div className="page school-detail-page">
       <Link className="back-link" to="/schools"><ArrowLeft size={17} />返回院校列表</Link>
       <header className="school-hero cloud-divider">
-        <div><p className="eyebrow">Target school dossier</p><h1>{school.name}</h1><p className="school-direction">{school.overview.direction}</p><div className="verified-date"><ShieldCheck size={17} />此信息检索截止 2026-08-14 · {school.overview.evidenceLevel}</div></div>
+        <div><p className="eyebrow">Target school dossier</p><h1>{school.name}</h1><p className="school-direction">{school.overview.direction}</p><div className="verified-date"><ShieldCheck size={17} aria-hidden="true" />题库信息版本 {formatDatasetDate(dataset.metadata.generatedAt)} · {school.overview.evidenceLevel}</div></div>
         <div className="school-hero-actions"><button className={`button ${active ? "secondary" : "primary"}`} onClick={() => setCurrentSchool(active ? null : school.id)}><Crosshair size={18} />{active ? "退出当前模式" : "设为当前模式"}</button>{questions[0] && <Link className="button primary" to={`/question/${questions[0].id}?mode=school`}>只练该校 <ArrowRight size={18} /></Link>}</div>
       </header>
       <section className="school-intel-grid">

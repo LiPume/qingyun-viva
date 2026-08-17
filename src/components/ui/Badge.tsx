@@ -13,6 +13,7 @@ const sourceTone: Record<SourceType, string> = {
   "school-specific": "reference",
   "source-document": "document",
   "web-supplement": "supplement",
+  "user-authored": "reference",
 };
 
 export function PriorityBadge({ priority }: { priority: Priority }) {

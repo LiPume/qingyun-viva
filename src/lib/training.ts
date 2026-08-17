@@ -1,16 +1,26 @@
-import type { MasteryLevel, VivaDataset, VivaQuestion } from "../models/dataset";
+import type { MasteryLevel, ReviewPolicy, VivaDataset, VivaQuestion } from "../models/dataset";
 import type { PracticeRecord, QuestionProgress } from "../models/training";
+import { DEFAULT_REVIEW_POLICY } from "../features/dataset/validate";
 
-export function getNextReviewDays(level: MasteryLevel, greenStreak: number): number {
-  if (level === 1) return 1;
-  if (level === 2) return 3;
-  if (level === 3) return greenStreak >= 2 ? 14 : 7;
-  if (level === 4) return 14;
+export function getNextReviewDays(
+  level: MasteryLevel,
+  greenStreak: number,
+  policy: ReviewPolicy = DEFAULT_REVIEW_POLICY,
+): number {
+  if (level === 1) return policy.redDays;
+  if (level === 2) return policy.yellowDays;
+  if (level === 3) return greenStreak >= 2 ? policy.greenStreak2Days : policy.greenDays;
+  if (level === 4) return policy.greenStreak2Days;
   return 0;
 }
 
-export function getNextReviewAt(level: MasteryLevel, greenStreak: number, practicedAt: Date): string | undefined {
-  const days = getNextReviewDays(level, greenStreak);
+export function getNextReviewAt(
+  level: MasteryLevel,
+  greenStreak: number,
+  practicedAt: Date,
+  policy: ReviewPolicy = DEFAULT_REVIEW_POLICY,
+): string | undefined {
+  const days = getNextReviewDays(level, greenStreak, policy);
   if (days === 0) return undefined;
   const next = new Date(practicedAt);
   next.setDate(next.getDate() + days);

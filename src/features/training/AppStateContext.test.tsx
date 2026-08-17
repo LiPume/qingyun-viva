@@ -1,11 +1,17 @@
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
+import rawDataset from "../../../public/data/default-dataset.json";
+import { DatasetProvider } from "../dataset/DatasetContext";
 import { AppStateProvider, useAppState } from "./AppStateContext";
 
-const wrapper = ({ children }: { children: ReactNode }) => <AppStateProvider>{children}</AppStateProvider>;
+const wrapper = ({ children }: { children: ReactNode }) => <DatasetProvider><AppStateProvider>{children}</AppStateProvider></DatasetProvider>;
 
 describe("AppStateContext", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => rawDataset })));
+  });
+  afterEach(() => vi.unstubAllGlobals());
 
   it("writes a formal practice record and updates review scheduling", () => {
     const { result } = renderHook(() => useAppState(), { wrapper });
@@ -34,5 +40,12 @@ describe("AppStateContext", () => {
     act(() => result.current.importBackup(backup));
     expect(result.current.progress["q-3"].favorite).toBe(true);
     expect(() => result.current.importBackup({ schemaVersion: 99 })).toThrow(/format|version|版本/);
+  });
+
+  it("can recalculate existing due dates with an imported review policy", () => {
+    const { result } = renderHook(() => useAppState(), { wrapper });
+    act(() => result.current.recordPractice({ questionId: "q-4", mastery: 1, followUpsAttempted: 0, followUpsPassed: 0, durationSeconds: 45, mode: "daily" }, new Date("2026-08-14T08:00:00.000Z")));
+    act(() => result.current.recalculateReviewSchedule({ redDays: 4, yellowDays: 6, greenDays: 9, greenStreak2Days: 18, description: "custom" }));
+    expect(result.current.progress["q-4"].nextReviewAt).toBe("2026-08-18T08:00:00.000Z");
   });
 });

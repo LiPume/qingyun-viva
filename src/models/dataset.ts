@@ -13,7 +13,16 @@ export type SourceType =
   | "official-ai-scope"
   | "official-style-reference"
   | "predicted-high-probability"
-  | "school-specific";
+  | "school-specific"
+  | "user-authored";
+
+export interface ReviewPolicy {
+  redDays: number;
+  yellowDays: number;
+  greenDays: number;
+  greenStreak2Days: number;
+  description: string;
+}
 
 export interface VivaQuestion {
   id: string;
@@ -81,13 +90,7 @@ export interface VivaDataset {
     notes: string;
   };
   masteryScale: Array<{ value: MasteryLevel; label: string; color: string }>;
-  reviewPolicy: {
-    redDays: number;
-    yellowDays: number;
-    greenDays: number;
-    greenStreak2Days: number;
-    description: string;
-  };
+  reviewPolicy: ReviewPolicy;
   studyGuide: {
     masteryCriteria: Record<string, string>;
     dailyRoutine: string;

@@ -18,6 +18,13 @@ describe("review scheduling", () => {
     expect(getNextReviewAt(1, 0, new Date("2026-08-14T08:00:00.000Z"))).toBe("2026-08-15T08:00:00.000Z");
     expect(isDue({ questionId: "q", mastery: 1, favorite: false, totalPractices: 1, greenStreak: 0, nextReviewAt: "2026-08-14T08:00:00.000Z" }, new Date("2026-08-15T00:00:00.000Z"))).toBe(true);
   });
+
+  it("uses the active dataset review policy instead of fixed intervals", () => {
+    const policy = { redDays: 2, yellowDays: 5, greenDays: 10, greenStreak2Days: 21, description: "custom" };
+    expect(getNextReviewDays(1, 0, policy)).toBe(2);
+    expect(getNextReviewDays(3, 2, policy)).toBe(21);
+    expect(getNextReviewAt(2, 0, new Date("2026-08-14T08:00:00.000Z"), policy)).toBe("2026-08-19T08:00:00.000Z");
+  });
 });
 
 describe("recommendation queue", () => {
