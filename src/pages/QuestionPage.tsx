@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronDown, Cir
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { MasteryBadge, PriorityBadge, SourceBadge } from "../components/ui/Badge";
+import { StructuredOralAnswer } from "../components/training/StructuredOralAnswer";
 import { useDataset } from "../features/dataset/DatasetContext";
 import { useAppState } from "../features/training/AppStateContext";
 import type { MasteryLevel } from "../models/dataset";
@@ -126,9 +127,9 @@ export function QuestionPage() {
 
       {(phase === "revealed" || phase === "rated") && (
         <div className="reveal-stack">
-          <section className="answer-section spoken-answer"><p className="section-number">I · 口述版</p><h2>先对照你刚才的表达</h2><p>{question.answer.spoken}</p></section>
-          {question.answer.explanation && <details className="answer-section" open><summary><span>II · 知识解析</span><ChevronDown size={18} /></summary><p>{question.answer.explanation}</p></details>}
-          {question.answer.memoryHook && <aside className="memory-hook"><span>记忆钩子</span><p>{question.answer.memoryHook}</p></aside>}
+          <section className="answer-section spoken-answer"><p className="section-number">I · 口述版</p><h2>先对照你刚才的表达</h2><StructuredOralAnswer fallback={question.answer.spoken} structure={question.answer.structure} /></section>
+          {question.answer.explanation && <details className="answer-section" open><summary><span>II · 知识解析</span><ChevronDown size={18} /></summary><p className="answer-explanation">{question.answer.explanation}</p></details>}
+          {question.answer.memoryHook && (!question.answer.structure || question.answer.memoryHook !== question.answer.structure.summary) && <aside className="memory-hook"><span>记忆钩子</span><p>{question.answer.memoryHook}</p></aside>}
           {question.followUps.length > 0 && <section className="answer-section follow-up-section"><p className="section-number">III · 追问链</p><h2>老师可能继续问</h2><div className="follow-up-list">{question.followUps.slice(0, followUpIndex).map((followUp, index) => <div className="follow-up-card" key={followUp}><span>追问 {index + 1}</span><p>{followUp}</p><div><button className={followUpResults[index] === "passed" ? "selected pass" : ""} onClick={() => markFollowUp(index, "passed")}><Check size={16} />接住了</button><button className={followUpResults[index] === "stuck" ? "selected stuck" : ""} onClick={() => markFollowUp(index, "stuck")}><RotateCcw size={16} />卡住了</button></div></div>)}</div>{followUpIndex < question.followUps.length && <button className="button secondary" onClick={() => setFollowUpIndex((value) => value + 1)}>下一追问 <ArrowRight size={17} /></button>}</section>}
           <details className="answer-section source-note"><summary><span>IV · 来源与证据</span><ChevronDown size={18} /></summary><SourceBadge type={question.source.type} label={question.source.label} /><p>{question.source.reference || "题目来自原始口述版资料，未额外改写事实口径。"}</p></details>
 

@@ -1,5 +1,6 @@
 import type {
   MasteryLevel,
+  OralAnswerStructure,
   ReviewPolicy,
   School,
   SourceType,
@@ -65,6 +66,25 @@ function stringArray(value: unknown, path: string, fallback: string[] = []): str
   assert(Array.isArray(value), path, "必须是字符串数组");
   assert(value.length <= 2_000, path, "条目不能超过 2000 个");
   return value.map((item, index) => requiredString(item, `${path}[${index}]`, 20_000));
+}
+
+function validateAnswerStructure(value: unknown, path: string): OralAnswerStructure | undefined {
+  if (value === undefined || value === null) return undefined;
+  assert(isRecord(value), path, "必须是对象");
+  assert(Array.isArray(value.points), `${path}.points`, "必须是数组");
+  assert(value.points.length >= 2 && value.points.length <= 5, `${path}.points`, "必须包含 2–5 个口述要点");
+  return {
+    direct: requiredString(value.direct, `${path}.direct`, 2_000),
+    points: value.points.map((item, index) => {
+      const pointPath = `${path}.points[${index}]`;
+      assert(isRecord(item), pointPath, "必须是对象");
+      return {
+        title: requiredString(item.title, `${pointPath}.title`, 120),
+        content: requiredString(item.content, `${pointPath}.content`, 5_000),
+      };
+    }),
+    summary: requiredString(value.summary, `${path}.summary`, 2_000),
+  };
 }
 
 function validateReviewPolicy(value: unknown): ReviewPolicy {
@@ -180,6 +200,7 @@ function validateQuestion(
     question: requiredString(value.question, `${path}.question`),
     answer: {
       spoken: requiredString(value.answer.spoken, `${path}.answer.spoken`),
+      structure: validateAnswerStructure(value.answer.structure, `${path}.answer.structure`),
       explanation: optionalString(value.answer.explanation, `${path}.answer.explanation`),
       memoryHook: optionalString(value.answer.memoryHook, `${path}.answer.memoryHook`),
     },
@@ -315,5 +336,6 @@ export function validateDefaultDataset(value: unknown): VivaDataset {
   const counts = dataset.metadata.counts;
   assert(counts.general === 143 && counts.school === 103, "questions.scope", "默认题库分布应为 general=143、school=103");
   assert(counts.S === 133 && counts.A === 71 && counts.B === 42, "questions.priority", "默认题库分布应为 S=133、A=71、B=42");
+  assert(dataset.questions.every((question) => question.answer.structure), "questions.answer.structure", "默认题库每道题都应包含结构化口述答案");
   return dataset;
 }

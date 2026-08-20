@@ -39,6 +39,10 @@ test("Dashboard 完成红题自评并更新复习时间", async ({ page }) => {
   await page.getByRole("button", { name: "开始作答" }).click();
   await page.getByRole("button", { name: "我答完了" }).click();
   await expect(page.getByText("先对照你刚才的表达")).toBeVisible();
+  await expect(page.getByText("先答一句")).toBeVisible();
+  await expect(page.getByText("再分点展开")).toBeVisible();
+  await expect(page.getByText("最后收住")).toBeVisible();
+  await expect(page.locator(".oral-answer-points li")).toHaveCount(5);
   await page.getByRole("button", { name: /不会/ }).click();
   await expect(page.getByText("本次口述已记录")).toBeVisible();
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem("qingyun-viva:progress:v1") ?? "{}") as Record<string, { mastery: number; nextReviewAt: string }>);

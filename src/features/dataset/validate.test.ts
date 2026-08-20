@@ -9,6 +9,10 @@ describe("dataset validation", () => {
     expect(dataset.subjects).toHaveLength(14);
     expect(dataset.metadata.counts).toEqual({ total: 246, general: 143, school: 103, S: 133, A: 71, B: 42 });
     expect(new Set(dataset.questions.map((question) => question.id)).size).toBe(246);
+    expect(dataset.questions.every((question) => {
+      const pointCount = question.answer.structure?.points.length ?? 0;
+      return pointCount >= 2 && pointCount <= 5;
+    })).toBe(true);
   });
 
   it("accepts a custom school and question while recalculating metadata counts", () => {
@@ -55,5 +59,11 @@ describe("dataset validation", () => {
     clone.reviewPolicy.redDays = 8;
     clone.reviewPolicy.yellowDays = 2;
     expect(() => validateDataset(clone)).toThrow(/红题周期不能长于黄题周期/);
+  });
+
+  it("rejects a malformed optional oral answer structure", () => {
+    const clone = structuredClone(rawDataset) as unknown as { questions: Array<{ answer: { structure: { points: unknown[] } } }> };
+    clone.questions[0].answer.structure.points = [];
+    expect(() => validateDataset(clone)).toThrow(/2–5 个口述要点/);
   });
 });

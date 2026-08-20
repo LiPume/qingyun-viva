@@ -24,6 +24,17 @@ export interface ReviewPolicy {
   description: string;
 }
 
+export interface OralAnswerPoint {
+  title: string;
+  content: string;
+}
+
+export interface OralAnswerStructure {
+  direct: string;
+  points: OralAnswerPoint[];
+  summary: string;
+}
+
 export interface VivaQuestion {
   id: string;
   scope: QuestionScope;
@@ -34,6 +45,7 @@ export interface VivaQuestion {
   question: string;
   answer: {
     spoken: string;
+    structure?: OralAnswerStructure;
     explanation: string;
     memoryHook: string;
   };

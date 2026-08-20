@@ -43,6 +43,9 @@ export function filterQuestions(
     const searchable = normalize([
       question.question,
       question.answer.spoken,
+      question.answer.structure?.direct ?? "",
+      ...(question.answer.structure?.points.flatMap((point) => [point.title, point.content]) ?? []),
+      question.answer.structure?.summary ?? "",
       question.answer.explanation,
       question.subject,
       ...question.tags,

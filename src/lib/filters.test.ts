@@ -10,6 +10,7 @@ describe("filterQuestions", () => {
     expect(byQuestion.length).toBeGreaterThan(0);
     const phrase = dataset.questions[0].answer.spoken.slice(0, 12);
     expect(filterQuestions(dataset, {}, { ...emptyFilters, query: phrase }).map((question) => question.id)).toContain(dataset.questions[0].id);
+    expect(filterQuestions(dataset, {}, { ...emptyFilters, query: "哈希三件套" }).map((question) => question.id)).toContain(dataset.questions[0].id);
   });
 
   it("combines school, priority, and source filters", () => {
