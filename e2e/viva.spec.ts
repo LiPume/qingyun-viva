@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
     }
   });
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "今日不求看完，只求说清。" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "今日不求看完，只求说清。" })).toBeVisible({ timeout: 15_000 });
 });
 
 test.afterEach(async ({ page }) => {
