@@ -82,15 +82,15 @@ test("追问一次只揭示一条并可标记卡住", async ({ page }) => {
 
 test("题库组合筛选并保持 URL，复旦截图真题可见", async ({ page }) => {
   await page.goto("./#/questions");
-  await page.getByLabel("目标院校").selectOption("fudan");
-  await page.getByLabel("优先级").selectOption("S");
-  await page.getByLabel("证据类型").selectOption("screenshot-verified");
+  await page.getByLabel("目标院校", { exact: true }).selectOption("fudan");
+  await page.getByLabel("优先级", { exact: true }).selectOption("S");
+  await page.getByLabel("证据类型", { exact: true }).selectOption("screenshot-verified");
   await expect(page).toHaveURL(/school=fudan/);
   await expect(page).toHaveURL(/source=screenshot-verified/);
   await expect(page.locator(".question-results .source-verified").first()).toHaveText("截图真题");
   await expect(page.getByText(/当前显示 [1-9]/)).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("目标院校")).toHaveValue("fudan");
+  await expect(page.getByLabel("目标院校", { exact: true })).toHaveValue("fudan");
 });
 
 test("院校模式切换会进入 Dashboard 语境", async ({ page }) => {
